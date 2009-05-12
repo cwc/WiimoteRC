@@ -3,8 +3,13 @@ using System.Diagnostics;
 using System.IO.Ports;
 using System.Resources;
 
+/*
+ * WiimoteLib is available from http://www.codeplex.com/WiimoteLib
+ *
+ * The version used here is probably 1.2 (from October 2007). Newer versions
+ * may or may not work with this code.
+ */
 using WiimoteLib;
-
 
 namespace WiimoteRC {
     class WiimoteRC {
@@ -24,13 +29,14 @@ namespace WiimoteRC {
             wiimote = new Wiimote();
             rcPort = new SerialPort();
 
+			// ResourceManager is used to get string values used to communicate with the bot from the external resources file
             rm = new ResourceManager("WiimoteRC.WiimoteRC-Resources", System.Reflection.Assembly.GetExecutingAssembly());
 
             Debug.Listeners.Add(new TextWriterTraceListener(System.Console.Out));
 
             m_bConnected = false;
 
-            // TODO Provide ways to configure serial port data
+            // TODO: Provide ways to configure serial port data
             rcPort.BaudRate = 2400;
             rcPort.DataBits = 8;
             rcPort.Parity = Parity.None;
@@ -41,7 +47,11 @@ namespace WiimoteRC {
 
             wiimote.WiimoteChanged += new WiimoteChangedEventHandler(wiimote_WiimoteChanged);
         }
-
+		
+		/*
+		 * This event handler is called any time the wiimote's state changes. This
+		 * includes acceleration data (waggle).
+		 */
         void wiimote_WiimoteChanged(object sender, WiimoteChangedEventArgs args) {
             x = (int)(args.WiimoteState.AccelState.X * 100) + 100;
             y = (int)(args.WiimoteState.AccelState.Y * 100) + 100;
@@ -71,6 +81,7 @@ namespace WiimoteRC {
                 z = 0;
             }
 
+			// NOTE: Disabled to keep from accidentally dis-/reconnecting while testing
 			//if (args.WiimoteState.ButtonState.A && m_bConnected) {
 			//    reconnect();
 			//}
@@ -114,6 +125,16 @@ namespace WiimoteRC {
             wiimote.Disconnect();
         }
 
+		/*
+		 * This method loops through all detected serial ports and attempts to handshake
+		 * with the bot.
+		 *
+		 * A reset (RST) string is sent first, in case the bot is not already waiting on
+		 * a SYN string. The SYN is sent right afterwards, and a line is read from the
+		 * port. If an ACK string is received, we have a successful connection.
+		 *
+		 * All of these strings are defined in the resources file.
+		 */
         private bool connectSerialPort() {
             bool bConnected = false;
 
@@ -207,6 +228,10 @@ namespace WiimoteRC {
             }
         }
 
+		/*
+		 * The main program loop sends data in the form "xNNNyNNN". This is parsed
+		 * by the programming on the bot and used to decide how to rotate the wheels.
+		 */
         public static void Main(string[] args) {
             bRunning = true;
 
