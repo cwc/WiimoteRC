@@ -1,0 +1,54 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+RES             PIN     0               ' Reset pin
+TX              PIN     2               ' TX pin
+RX              PIN     4               ' RX Pin
+VSS             PIN     6               ' VSS Pin
+
+sData           VAR     Byte(5)
+nX              VAR     Byte
+nY              VAR     Byte
+nPower          VAR     Word
+
+Init:
+
+LOW 8
+SERIN TX, 396, [WAIT("Hello")]
+PAUSE 250
+SEROUT RX, 396, ["Sup", LF]
+HIGH 8
+
+Main:
+
+DO
+  SERIN TX, 396, [WAIT("x"), DEC3 nX]
+  SERIN TX, 396, [WAIT("y"), DEC3 nY]
+
+  'DEBUG "x", DEC nX, "y", DEC nY, CR
+
+  IF (nX = 255 OR nY = 255) THEN
+    GOTO Init
+  ENDIF
+
+  IF (nX > 100) THEN
+    nPower = 750 - nX
+  ELSEIF (nX = 0) THEN
+    nPower = 750
+  ELSE
+    nPower = 750 + 100 - nX
+  ENDIF
+
+  IF (nY > 100) THEN
+    PULSOUT 14, nPower - nY + 100
+    PULSOUT 15, 1500 - nPower
+  ELSEIF (nY = 0) THEN
+    PULSOUT 14, nPower
+    PULSOUT 15, 1500 - nPower
+  ELSE
+    PULSOUT 14, nPower
+    PULSOUT 15, 1500 - nPower + 100 - nY
+  ENDIF
+LOOP
+
+END
